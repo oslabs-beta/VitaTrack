@@ -2,7 +2,7 @@ export default function App() {
   return (
     <div className="p-6">
       <h1 className="text-2xl text-red-500">VitaTrack</h1>
-      <p className="mt-2">Tailwind sanity check</p>
+      <p className="mt-2">Tailwind check</p>
     </div>
   );
 }
