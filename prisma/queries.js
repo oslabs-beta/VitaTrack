@@ -116,12 +116,12 @@ async function updateGoalProgress(id, currentValue, currentStreak = null) {
     currentValue,
     lastUpdated: new Date()
   }
-  
+
   if (currentStreak !== null) {
     updateData.currentStreak = currentStreak
     updateData.bestStreak = Math.max(currentStreak, await getBestStreak(id))
   }
-  
+
   return await prisma.goal.update({
     where: { id },
     data: updateData
@@ -141,24 +141,24 @@ module.exports = {
   // User queries
   findUserByEmail,
   createUser,
-  
+
   // Food log queries
   getFoodLogsByDate,
   createFoodLog,
   updateFoodLog,
   deleteFoodLog,
-  
+
   // Workout queries
   getWorkoutsByDateRange,
   createWorkout,
   updateWorkout,
   deleteWorkout,
-  
+
   // Goal queries
   getActiveGoals,
   createGoal,
   updateGoalProgress,
-  
+
   // Direct prisma access for complex queries
   prisma
 }
