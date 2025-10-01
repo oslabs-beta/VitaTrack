@@ -1,16 +1,24 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/stores/useAuth';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
-type FormData = { email: string; password: string; confirm: string };
+type FormData = { 
+  email: string; 
+  password: string; 
+  confirm: string;
+  firstName?: string;
+  lastName?: string;
+};
 
 export default function Register() {
   const nav = useNavigate();
+  const { setAuth, setLoading } = useAuth();
   const {
     register,
     handleSubmit,
@@ -19,10 +27,34 @@ export default function Register() {
   } = useForm<FormData>();
 
   const onSubmit = async (data: FormData) => {
-    // TODO: wire to /auth/register then set auth + navigate('/')
-    console.log('register payload:', data);
-    toast.success('Pretend registration success (UI only)');
-    nav('/');
+    try {
+      setLoading(true);
+      
+      const { confirm, ...registerData } = data;
+      
+      const response = await fetch('http://localhost:5001/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAuth(result.data.token, result.data.user);
+        toast.success('Registration successful!');
+        nav('/');
+      } else {
+        toast.error(result.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const pw = watch('password');
@@ -43,9 +75,36 @@ export default function Register() {
                 type="email"
                 placeholder="you@example.com"
                 aria-invalid={!!errors.email}
-                {...register('email', { required: 'Email is required' })}
+                {...register('email', { 
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address'
+                  }
+                })}
               />
               {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="John"
+                  {...register('firstName')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  {...register('lastName')}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

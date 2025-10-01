@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/stores/useAuth';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ type FormData = { email: string; password: string };
 
 export default function Login() {
   const nav = useNavigate();
+  const { setAuth, setLoading } = useAuth();
   const {
     register,
     handleSubmit,
@@ -18,10 +20,32 @@ export default function Login() {
   } = useForm<FormData>();
 
   const onSubmit = async (data: FormData) => {
-    // TODO: wire to /auth/login then set auth + navigate('/')
-    console.log('login payload:', data);
-    toast.success('Pretend login success (UI only)');
-    nav('/'); // remove if you don’t want to auto-navigate in UI-only mode
+    try {
+      setLoading(true);
+      
+      const response = await fetch('http://localhost:5001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAuth(result.data.token, result.data.user);
+        toast.success('Login successful!');
+        nav('/');
+      } else {
+        toast.error(result.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,7 +64,13 @@ export default function Login() {
                 type="email"
                 placeholder="you@example.com"
                 aria-invalid={!!errors.email}
-                {...register('email', { required: 'Email is required' })}
+                {...register('email', { 
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address'
+                  }
+                })}
               />
               {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
             </div>
@@ -73,4 +103,3 @@ export default function Login() {
     </div>
   );
 }
-
