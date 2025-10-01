@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon --exec \"node --loader ts-node/esm server.ts\"",
     "start": "node dist/server.js",
-    "build": "tsc -p tsconfig.server.json",
+    "build": "cd tableviewer && npm run build && cd .. && tsc -p tsconfig.server.json",
     "test": "jest"
   },
   "dependencies": {

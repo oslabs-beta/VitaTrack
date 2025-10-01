@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     sourcemap: mode === "development",
+    outDir: "../dist/tableviewer",  // Build into dist/tableviewer
+    emptyOutDir: true
   },
   base: "./",
 }));
