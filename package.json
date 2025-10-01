@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon --exec \"node --loader ts-node/esm server.ts\"",
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.server.json",
     "test": "jest"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "sequelize": "^6.37.3"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
