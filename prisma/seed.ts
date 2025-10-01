@@ -1,9 +1,9 @@
-const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcrypt')
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
-async function main() {
+async function main(): Promise<void> {
   console.log('🌱 Starting seed data creation...')
 
   // Create test users
@@ -113,7 +113,7 @@ async function main() {
     ]
   })
 
-  console.log('🍎 Created food logs')
+  console.log('🎃 Created food logs')
 
   // Create sample workouts
   await prisma.workout.createMany({
@@ -230,7 +230,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch((e: Error) => {
     console.error('❌ Seed error:', e)
     process.exit(1)
   })

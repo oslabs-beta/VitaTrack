@@ -1,10 +1,97 @@
-const { PrismaClient } = require('@prisma/client')
+import { PrismaClient } from '@prisma/client'
+
 const prisma = new PrismaClient()
+
+// ==================== TYPE DEFINITIONS ====================
+
+interface DailyNutritionStats {
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
+  totalFiber: number
+  totalSugar: number
+  mealCount: number
+  date: Date
+}
+
+interface MealNutrition {
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+interface DailyMealBreakdown {
+  breakfast: MealNutrition
+  lunch: MealNutrition
+  dinner: MealNutrition
+  snack: MealNutrition
+}
+
+interface NutritionTrendDay {
+  date: Date
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
+  mealCount: number
+}
+
+interface WorkoutTypeBreakdown {
+  type: string
+  count: number
+  totalDuration: number
+}
+
+interface WeeklyWorkoutStats {
+  totalWorkouts: number
+  totalDuration: number
+  totalDistance: number
+  totalCaloriesBurned: number
+  averageDuration: number
+  workoutTypeBreakdown: WorkoutTypeBreakdown[]
+  weekStart: Date
+  weekEnd: Date
+}
+
+interface WorkoutTrendWeek {
+  weekStart: Date
+  workoutCount: number
+  totalDuration: number
+  totalCalories: number
+  avgDuration: number
+}
+
+interface GoalProgress {
+  id: string
+  userId: string
+  goalType: string
+  targetValue: number
+  currentValue: number
+  isActive: boolean
+  createdAt: Date
+  progressPercent: number
+  isCompleted: boolean
+  remaining: number
+}
+
+interface DashboardSummary {
+  date: Date
+  nutrition: {
+    daily: DailyNutritionStats
+    mealBreakdown: DailyMealBreakdown
+  }
+  workouts: WeeklyWorkoutStats
+  goals: GoalProgress[]
+}
 
 // ==================== DAILY FOOD STATS ====================
 
-// Get daily nutrition totals for a user
-async function getDailyNutritionStats(userId, date) {
+async function getDailyNutritionStats(
+  userId: string,
+  date: Date
+): Promise<DailyNutritionStats> {
   const stats = await prisma.foodLog.aggregate({
     where: {
       userId,
@@ -19,7 +106,7 @@ async function getDailyNutritionStats(userId, date) {
       sugar: true
     },
     _count: {
-      id: true // number of food entries
+      id: true
     }
   })
 
@@ -35,10 +122,12 @@ async function getDailyNutritionStats(userId, date) {
   }
 }
 
-// Get daily nutrition breakdown by meal type
-async function getDailyMealBreakdown(userId, date) {
-  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack']
-  const breakdown = {}
+async function getDailyMealBreakdown(
+  userId: string,
+  date: Date
+): Promise<DailyMealBreakdown> {
+  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'] as const
+  const breakdown: Partial<DailyMealBreakdown> = {}
 
   for (const mealType of mealTypes) {
     const stats = await prisma.foodLog.aggregate({
@@ -63,12 +152,22 @@ async function getDailyMealBreakdown(userId, date) {
     }
   }
 
-  return breakdown
+  return breakdown as DailyMealBreakdown
 }
 
-// Get nutrition trends over date range
-async function getNutritionTrends(userId, startDate, endDate) {
-  const dailyStats = await prisma.$queryRaw`
+async function getNutritionTrends(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<NutritionTrendDay[]> {
+  const dailyStats = await prisma.$queryRaw<Array<{
+    date: Date
+    total_calories: number | null
+    total_protein: number | null
+    total_carbs: number | null
+    total_fat: number | null
+    meal_count: number
+  }>>`
     SELECT 
       logged_date as date,
       SUM(calories) as total_calories,
@@ -96,8 +195,11 @@ async function getNutritionTrends(userId, startDate, endDate) {
 
 // ==================== WEEKLY WORKOUT STATS ====================
 
-// Get weekly workout summary
-async function getWeeklyWorkoutStats(userId, startDate, endDate) {
+async function getWeeklyWorkoutStats(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<WeeklyWorkoutStats> {
   const stats = await prisma.workout.aggregate({
     where: {
       userId,
@@ -119,7 +221,6 @@ async function getWeeklyWorkoutStats(userId, startDate, endDate) {
     }
   })
 
-  // Get workout type breakdown
   const typeBreakdown = await prisma.workout.groupBy({
     by: ['workoutType'],
     where: {
@@ -153,9 +254,18 @@ async function getWeeklyWorkoutStats(userId, startDate, endDate) {
   }
 }
 
-// Get workout trends over time
-async function getWorkoutTrends(userId, startDate, endDate) {
-  const weeklyStats = await prisma.$queryRaw`
+async function getWorkoutTrends(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<WorkoutTrendWeek[]> {
+  const weeklyStats = await prisma.$queryRaw<Array<{
+    week_start: Date
+    workout_count: number
+    total_duration: number | null
+    total_calories: number | null
+    avg_duration: number | null
+  }>>`
     SELECT 
       DATE_TRUNC('week', workout_date) as week_start,
       COUNT(*) as workout_count,
@@ -181,8 +291,10 @@ async function getWorkoutTrends(userId, startDate, endDate) {
 
 // ==================== GOAL PROGRESS STATS ====================
 
-// Calculate goal progress percentage
-async function getGoalProgress(userId, goalId) {
+async function getGoalProgress(
+  userId: string,
+  goalId: string
+): Promise<GoalProgress> {
   const goal = await prisma.goal.findUnique({
     where: { id: goalId },
     include: { user: true }
@@ -204,8 +316,7 @@ async function getGoalProgress(userId, goalId) {
   }
 }
 
-// Get all goals with progress for user
-async function getAllGoalsWithProgress(userId) {
+async function getAllGoalsWithProgress(userId: string): Promise<GoalProgress[]> {
   const goals = await prisma.goal.findMany({
     where: { userId, isActive: true },
     orderBy: { createdAt: 'desc' }
@@ -227,14 +338,16 @@ async function getAllGoalsWithProgress(userId) {
 
 // ==================== DASHBOARD SUMMARY ====================
 
-// Get complete dashboard data for a user
-async function getDashboardSummary(userId, date) {
+async function getDashboardSummary(
+  userId: string,
+  date?: Date
+): Promise<DashboardSummary> {
   const today = date || new Date()
   const weekStart = new Date(today)
-  weekStart.setDate(today.getDate() - today.getDay()) // Start of week
+  weekStart.setDate(today.getDate() - today.getDay())
 
   const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekStart.getDate() + 6) // End of week
+  weekEnd.setDate(weekStart.getDate() + 6)
 
   const [
     dailyNutrition,
@@ -259,7 +372,20 @@ async function getDashboardSummary(userId, date) {
   }
 }
 
-module.exports = {
+// ==================== EXPORTS ====================
+
+export {
+  // Types
+  type DailyNutritionStats,
+  type MealNutrition,
+  type DailyMealBreakdown,
+  type NutritionTrendDay,
+  type WorkoutTypeBreakdown,
+  type WeeklyWorkoutStats,
+  type WorkoutTrendWeek,
+  type GoalProgress,
+  type DashboardSummary,
+  
   // Nutrition stats
   getDailyNutritionStats,
   getDailyMealBreakdown,
