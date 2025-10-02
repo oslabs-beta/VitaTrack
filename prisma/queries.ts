@@ -39,6 +39,7 @@ interface UpdateFoodLogInput {
 
 interface CreateWorkoutInput {
   userId: string
+  workoutName: string
   workoutDate: Date
   workoutType: string
   duration: number
@@ -58,8 +59,12 @@ interface UpdateWorkoutInput {
 
 interface CreateGoalInput {
   userId: string
+  goalName: string
   goalType: string
   targetValue: number
+  targetUnit: string
+  period: string      
+  startDate: Date      
   currentValue?: number
   deadline?: Date
   isActive?: boolean
@@ -97,14 +102,14 @@ async function createFoodLog(foodLogData: CreateFoodLogInput): Promise<FoodLog> 
   })
 }
 
-async function updateFoodLog(id: string, updateData: UpdateFoodLogInput): Promise<FoodLog> {
+async function updateFoodLog(id: number, updateData: UpdateFoodLogInput): Promise<FoodLog> {
   return await prisma.foodLog.update({
     where: { id },
     data: updateData
   })
 }
 
-async function deleteFoodLog(id: string): Promise<FoodLog> {
+async function deleteFoodLog(id: number): Promise<FoodLog> {
   return await prisma.foodLog.delete({
     where: { id }
   })
@@ -135,14 +140,14 @@ async function createWorkout(workoutData: CreateWorkoutInput): Promise<Workout> 
   })
 }
 
-async function updateWorkout(id: string, updateData: UpdateWorkoutInput): Promise<Workout> {
+async function updateWorkout(id: number, updateData: UpdateWorkoutInput): Promise<Workout> {
   return await prisma.workout.update({
     where: { id },
     data: updateData
   })
 }
 
-async function deleteWorkout(id: string): Promise<Workout> {
+async function deleteWorkout(id: number): Promise<Workout> {
   return await prisma.workout.delete({
     where: { id }
   })
@@ -167,7 +172,7 @@ async function createGoal(goalData: CreateGoalInput): Promise<Goal> {
 }
 
 async function updateGoalProgress(
-  id: string,
+  id: number,
   currentValue: number,
   currentStreak: number | null = null
 ): Promise<Goal> {
@@ -192,7 +197,7 @@ async function updateGoalProgress(
   })
 }
 
-async function getBestStreak(goalId: string): Promise<number> {
+async function getBestStreak(goalId: number): Promise<number> {
   const goal = await prisma.goal.findUnique({
     where: { id: goalId },
     select: { bestStreak: true }

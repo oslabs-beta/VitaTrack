@@ -293,7 +293,7 @@ async function getWorkoutTrends(
 
 async function getGoalProgress(
   userId: string,
-  goalId: string
+  goalId: number
 ): Promise<GoalProgress> {
   const goal = await prisma.goal.findUnique({
     where: { id: goalId },

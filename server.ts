@@ -23,16 +23,30 @@ app.get("/api", (req: express.Request, res: express.Response) => {
   res.send("Welcome to VitaTrack Backend 🚀");
 });
 
-// Import and use auth routes
+// Import and use all routes
 import authRoutes from "./routes/authRoutes.js";
+import foodLogRoutes from "./routes/foodLogRoutes.js";
+import workoutRoutes from "./routes/workoutRoutes.js";
+import goalRoutes from "./routes/goalRoutes.js";
+
+// Mount API routes FIRST (before static files and catch-all)
 app.use("/auth", authRoutes);
+app.use("/api/food-logs", foodLogRoutes);
+app.use("/api/workouts", workoutRoutes);
+app.use("/api/goals", goalRoutes);
 
 // Serve tableviewer static files at root
 app.use(express.static(path.join(__dirname, 'tableviewer')));
 
-// Catch-all route for tableviewer SPA (must be LAST)
+// Catch-all route for tableviewer SPA (must be LAST and NOT match /api or /auth)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'tableviewer', 'index.html'));
+    // Only serve tableviewer for non-API routes
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/auth')) {
+        res.sendFile(path.join(__dirname, 'tableviewer', 'index.html'));
+    } else {
+        // If an API route isn't found, send 404
+        res.status(404).json({ error: 'Route not found' });
+    }
 });
 
 // Start server
