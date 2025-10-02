@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Thin Thin and Kevin will need the next parts for Authentication & Middleware:
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships 
+  foodLogs  FoodLog[]
+  workouts  Workout[]
+  goals     Goal[]
+
+  @@map("users")
+}
+
+model FoodLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  foodName    String   @map("food_name")
+  servingSize Float    @map("serving_size")
+  servingUnit String   @map("serving_unit") // "cup", "gram", "piece", etc.
+  
+  // Nutrition data
+  calories    Float
+  protein     Float?   // grams
+  carbs       Float?   @map("carbohydrates") // grams  
+  fat         Float?   // grams
+  fiber       Float?   // grams
+  sugar       Float?   // grams
+  
+  // Meal context
+  mealType    String   @map("meal_type") // "breakfast", "lunch", "dinner", "snack"
+  loggedDate  DateTime @map("logged_date") @db.Date
+  
+  // AI integration fields (for future)
+  foodApiId   String?  @map("food_api_id") // External nutrition DB ID
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("food_logs")
+}
+
+model Workout {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  workoutName   String   @map("workout_name") // "Morning Run", "Leg Day", etc.
+  workoutType   String   @map("workout_type") // "cardio", "strength", "flexibility", "sports"
+  
+  // Core metrics
+  duration      Int      // minutes
+  distance      Float?   // miles/km (optional, for cardio)
+  intensity     String?  // "low", "moderate", "high"
+  
+  // Strength training specific (optional)
+  sets          Int?     // number of sets
+  reps          Int?     // average reps per set
+  weight        Float?   // pounds/kg (average weight used)
+  
+  // Additional details
+  notes         String?  // User notes about the workout
+  caloriesBurned Float?  @map("calories_burned") // estimated or calculated
+  
+  // Workout context
+  workoutDate   DateTime @map("workout_date") @db.Date
+  
+  // For workout generator
+  isGenerated   Boolean  @default(false) @map("is_generated")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workouts")
+}
+
+model Goal {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  goalName      String   @map("goal_name") // "Daily Calories", "Weekly Workouts", etc.
+  goalType      String   @map("goal_type") // "calories", "workout_frequency", "weight", "habit"
+  
+  // Goal targets
+  targetValue   Float    @map("target_value") // 2000 (calories), 3 (workouts/week), 150 (lbs)
+  targetUnit    String   @map("target_unit") // "calories", "workouts", "lbs", "days"
+  
+  // Time period
+  period        String   // "daily", "weekly", "monthly"
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime? @map("end_date") @db.Date // null for ongoing goals
+  
+  // Progress tracking
+  currentValue  Float    @default(0) @map("current_value")
+  lastUpdated   DateTime @default(now()) @map("last_updated")
+  
+  // Streak tracking (for habits)
+  currentStreak Int      @default(0) @map("current_streak")
+  bestStreak    Int      @default(0) @map("best_streak")
+  
+  // Goal status
+  isActive      Boolean  @default(true) @map("is_active")
+  isCompleted   Boolean  @default(false) @map("is_completed")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
