@@ -23,7 +23,6 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
       const secret = process.env.JWT_SECRET || 'your-secret-key';
       const decoded = jwt.verify(token, secret) as any;
       
-      // Create user object from token
       req.user = {
         id: decoded.userId,
         email: decoded.email,
