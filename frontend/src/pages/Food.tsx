@@ -18,6 +18,7 @@ export default function Food() {
   const [submitting, setSubmitting] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);   // ← AI lookup state
   const [lastEstimate, setLastEstimate] = useState<string>(''); // optional display
+  const [lastAiSummary, setLastAiSummary] = useState<string>(''); 
 
   const refresh = async () => {
     setLoading(true);
@@ -38,50 +39,53 @@ export default function Food() {
   }, [meals]);
 
   const runLookup = async () => {
-    if (!draft.name) return toast.error('Enter a food name first');
-    try {
-      setLookupLoading(true);
-      const est = await aiLookup(draft.name);
-      // prefill the form with the estimate (user can still edit)
-      setDraft((p) => ({
-        ...p,
-        name: est.name || p.name,
-        calories: est.calories ?? p.calories,
-        protein: est.protein ?? p.protein,
-        carbs: est.carbs ?? p.carbs,
-        fat: est.fat ?? p.fat,
-      }));
-      setLastEstimate(`${est.calories} cal • P:${est.protein ?? 0} C:${est.carbs ?? 0} F:${est.fat ?? 0}`);
-      toast.success('AI estimate applied');
-    } catch (e: any) {
-      toast.error(e?.message || 'AI lookup failed');
-    } finally {
-      setLookupLoading(false);
-    }
-  };
+  if (!draft.name) return toast.error('Enter a food name first');
+  try {
+    setLookupLoading(true);
+    const est = await aiLookup(draft.name);
+    // prefill the form with the estimate (user can still edit)
+    setDraft((p) => ({
+      ...p,
+      name: est.name || p.name,
+      calories: est.calories ?? p.calories,
+      protein: est.protein ?? p.protein,
+      carbs: est.carbs ?? p.carbs,
+      fat: est.fat ?? p.fat,
+    }));
+    setLastEstimate(`${est.calories} cal • P:${est.protein ?? 0} C:${est.carbs ?? 0} F:${est.fat ?? 0}`);
+    setLastAiSummary(est.source || '');  // Store the full AI summary
+    toast.success('AI estimate applied');
+  } catch (e: any) {
+    toast.error(e?.message || 'AI lookup failed');
+  } finally {
+    setLookupLoading(false);
+  }
+};
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draft.name || !draft.calories) return toast.error('Name and calories are required');
-    setSubmitting(true);
-    try {
-      await createMeal({
-        name: draft.name,
-        calories: Number(draft.calories) || 0,
-        protein: Number(draft.protein) || 0,
-        carbs: Number(draft.carbs) || 0,
-        fat: Number(draft.fat) || 0,
-      });
-      toast.success('Meal added');
-      setDraft({ name: '', calories: '', protein: '', carbs: '', fat: '' });
-      setLastEstimate('');
-      await refresh();
-    } catch {
-      toast.error('Failed to add meal');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  e.preventDefault();
+  if (!draft.name || !draft.calories) return toast.error('Name and calories are required');
+  setSubmitting(true);
+  try {
+    await createMeal({
+      name: draft.name,
+      calories: Number(draft.calories) || 0,
+      protein: Number(draft.protein) || 0,
+      carbs: Number(draft.carbs) || 0,
+      fat: Number(draft.fat) || 0,
+      aiSummary: lastAiSummary || undefined,  // Include AI summary if it exists
+    });
+    toast.success('Meal added');
+    setDraft({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+    setLastEstimate('');
+    setLastAiSummary('');  // Clear AI summary
+    await refresh();
+  } catch {
+    toast.error('Failed to add meal');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -101,7 +105,14 @@ export default function Food() {
               </Button>
             </div>
             {lastEstimate && (
-              <div className="text-xs text-muted-foreground">Estimate: {lastEstimate}</div>
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Estimate: {lastEstimate}</div>
+                {lastAiSummary && (
+                  <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                    <strong>AI Summary:</strong> {lastAiSummary}
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="grid grid-cols-4 gap-2">
@@ -133,16 +144,23 @@ export default function Food() {
           ) : (
             <ul className="space-y-2">
               {meals.map((m) => (
-                <li key={m.id} className="flex items-center justify-between rounded border px-3 py-2">
-                  <div>
-                    <div className="font-medium">{m.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {m.calories} cal • P:{m.protein||0} C:{m.carbs||0} F:{m.fat||0}
+                <li key={m.id} className="rounded border px-3 py-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="font-medium">{m.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {m.calories} cal • P:{m.protein||0} C:{m.carbs||0} F:{m.fat||0}
+                      </div>
                     </div>
+                    <Button variant="outline" size="sm" onClick={() => removeMeal(m.id).then(refresh)}>
+                      Delete
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => removeMeal(m.id).then(refresh)}>
-                    Delete
-                  </Button>
+                  {m.aiSummary && (
+                    <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                      <strong>AI:</strong> {m.aiSummary}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

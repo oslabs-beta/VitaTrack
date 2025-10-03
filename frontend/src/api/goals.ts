@@ -37,7 +37,7 @@ export async function getGoals(): Promise<Goals> {
     return { dailyCalories: 2000, weeklyWorkouts: 3 };
   }
   // Active goals
-  const { data } = await api.get<GoalServer[]>('/goals');
+  const { data } = await api.get<GoalServer[]>('/api/goals');
   const res: Goals = {};
   for (const g of data) {
     if (isDailyCalories(g)) res.dailyCalories = g.targetValue;
@@ -50,12 +50,33 @@ export async function getGoals(): Promise<Goals> {
 export async function upsertGoals(input: Goals): Promise<Goals> {
   if (USE_MOCKS) return input;
 
-  const current = await api.get<GoalServer[]>('/goals').then(r => r.data);
-  const ops: Promise<any>[] = [];
+  const current = await api.get<GoalServer[]>('/api/goals').then(r => r.data);
+  
+  // Find existing goals
+  const dailyGoal = current.find(isDailyCalories);
+  const weeklyGoal = current.find(isWeeklyWorkouts);
 
-  const haveDaily = current.find(isDailyCalories);
-  if (input.dailyCalories != null && !haveDaily) {
-    ops.push(api.post('/goals', {
+  // Delete if values changed
+  const deleteOps: Promise<any>[] = [];
+  
+  if (dailyGoal && input.dailyCalories != null && dailyGoal.targetValue !== input.dailyCalories) {
+    deleteOps.push(api.delete(`/api/goals/${dailyGoal.id}`));
+  }
+  if (weeklyGoal && input.weeklyWorkouts != null && weeklyGoal.targetValue !== input.weeklyWorkouts) {
+    deleteOps.push(api.delete(`/api/goals/${weeklyGoal.id}`));
+  }
+
+  if (deleteOps.length > 0) {
+    await Promise.all(deleteOps);
+    // Small delay to ensure DB processes deletions
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Create new goals
+  const createOps: Promise<any>[] = [];
+
+  if (input.dailyCalories != null && (!dailyGoal || dailyGoal.targetValue !== input.dailyCalories)) {
+    createOps.push(api.post('/api/goals', {
       goalName: 'Daily Calorie Target',
       goalType: 'calories',
       targetValue: input.dailyCalories,
@@ -67,9 +88,8 @@ export async function upsertGoals(input: Goals): Promise<Goals> {
     }));
   }
 
-  const haveWeekly = current.find(isWeeklyWorkouts);
-  if (input.weeklyWorkouts != null && !haveWeekly) {
-    ops.push(api.post('/goals', {
+  if (input.weeklyWorkouts != null && (!weeklyGoal || weeklyGoal.targetValue !== input.weeklyWorkouts)) {
+    createOps.push(api.post('/api/goals', {
       goalName: 'Weekly Workout Target',
       goalType: 'workout_frequency',
       targetValue: input.weeklyWorkouts,
@@ -81,7 +101,11 @@ export async function upsertGoals(input: Goals): Promise<Goals> {
     }));
   }
 
-  await Promise.all(ops);
+  await Promise.all(createOps);
+  
+  // Delay before final fetch to ensure DB has processed creates
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   return getGoals();
 }
 

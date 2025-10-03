@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuth } from '@/stores/useAuth';
 
 const api = axios.create({
-  baseURL: '/api',       // dev proxied to :3000; prod same-origin
+  baseURL: '/',          // dev proxied to :3000; prod same-origin
   withCredentials: true, // OK for cookie auth; harmless otherwise
 });
 

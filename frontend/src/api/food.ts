@@ -10,6 +10,7 @@ export type Meal = {
   carbs?: number;
   fat?: number;
   createdAt: string;
+  aiSummary?: string;
 };
 
 export type NutritionEstimate = {
@@ -20,6 +21,10 @@ export type NutritionEstimate = {
   fat?: number;
   confidence?: number;
   source?: string;
+};
+
+export type AISummary = {
+  summary: string;
 };
 
 // ---------- Server shape per backend doc ----------
@@ -37,6 +42,7 @@ type MealServer = {
   sugar?: number;
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   loggedDate: string;   // 'YYYY-MM-DD' or ISO midnight
+  aiSummary?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -49,6 +55,7 @@ const toClient = (m: MealServer): Meal => ({
   carbs: m.carbs ?? 0,
   fat: m.fat ?? 0,
   createdAt: m.createdAt,
+  aiSummary: m.aiSummary,
 });
 
 const todayYMD = () => new Date().toISOString().slice(0, 10);
@@ -64,7 +71,7 @@ export async function listToday(): Promise<Meal[]> {
     return mockMeals;
   }
   // GET /api/food-logs/daily/:date
-  const { data } = await api.get<MealServer[]>(`/food-logs/daily/${todayYMD()}`);
+  const { data } = await api.get<MealServer[]>(`/api/food-logs/daily/${todayYMD()}`);
   return data.map(toClient);
 }
 
@@ -75,6 +82,7 @@ export async function createMeal(input: {
   protein?: number;
   carbs?: number;
   fat?: number;
+  aiSummary?: string; 
   // later you can add: mealType, servingSize, servingUnit, loggedDate
 }): Promise<Meal> {
   if (USE_MOCKS) {
@@ -103,8 +111,9 @@ export async function createMeal(input: {
     fat: input.fat ?? 0,
     servingSize: 1,           // default
     servingUnit: 'unit',      // default
+    aiSummary: input.aiSummary,
   };
-  const { data } = await api.post<MealServer>('/food-logs', body);
+  const { data } = await api.post<MealServer>('/api/food-logs', body);
   return toClient(data);
 }
 
@@ -115,7 +124,7 @@ export async function removeMeal(id: number): Promise<void> {
     mockMeals = mockMeals.filter((m) => m.id !== id);
     return;
   }
-  await api.delete(`/food-logs/${id}`);
+  await api.delete(`/api/food-logs/${id}`);
 }
 
 // ------------ AI LOOKUP (Design A prefill) ------------
@@ -133,15 +142,37 @@ export async function aiLookup(query: string): Promise<NutritionEstimate> {
     return est;
   }
 
-  // When Kevin adds it, wire to the real endpoint here.
-  // Without that, this call will 404 and your UI will toast an error.
-  const { data } = await api.get<NutritionEstimate>('/food-logs/ai-lookup', { params: { query } });
-  return data;
+  // Call backend
+  const { data } = await api.post<{ summary: string }>('/api/ai/nutrition/summary', { text: query });
+  
+  // Parse the AI summary to extract numbers
+  const summary = data.summary;
+  
+  // Extract calories (looking for patterns like "300 kcal", "300 cal", "300 calories")
+  const caloriesMatch = summary.match(/(\d+)\s*(?:-\s*\d+\s*)?(?:kcal|cal|calories)/i);
+  const calories = caloriesMatch ? parseInt(caloriesMatch[1]) : 0;
+  
+  // Extract protein (looking for "25g protein", "25 g protein", etc.)
+  const proteinMatch = summary.match(/(\d+)\s*g?\s*protein/i);
+  const protein = proteinMatch ? parseInt(proteinMatch[1]) : 0;
+  
+  // Extract carbs (looking for "30g carbs", "30g carb", etc.)
+  const carbsMatch = summary.match(/(\d+)\s*g?\s*carb(?:s|ohydrate)?/i);
+  const carbs = carbsMatch ? parseInt(carbsMatch[1]) : 0;
+  
+  // Extract fat (looking for "15g fat", "15 g fat", etc.)
+  const fatMatch = summary.match(/(\d+)\s*g?\s*fat/i);
+  const fat = fatMatch ? parseInt(fatMatch[1]) : 0;
+
+  return {
+    name: query,
+    calories,
+    protein,
+    carbs,
+    fat,
+    source: summary,  // Store the full AI summary
+  };
 }
-
-
-
-
 
 
 // import api from './axios';

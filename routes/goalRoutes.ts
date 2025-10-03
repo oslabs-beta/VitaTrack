@@ -4,7 +4,8 @@ import {
   getAllGoalsProgress,
   getSingleGoalProgress,
   createNewGoal,
-  updateGoalProgressValue
+  updateGoalProgressValue,
+  deleteGoalEntry
 } from '../controllers/goalController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -19,5 +20,6 @@ router.get('/progress', getAllGoalsProgress);
 router.get('/:id/progress', getSingleGoalProgress);
 router.post('/', createNewGoal);
 router.patch('/:id/progress', updateGoalProgressValue);
+router.delete('/:id', deleteGoalEntry);
 
 export default router;

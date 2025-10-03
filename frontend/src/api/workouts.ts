@@ -51,7 +51,7 @@ export async function listRecent(): Promise<Workout[]> {
   const endDate = todayYMD();
   const startDate = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   // GET /api/workouts?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
-  const { data } = await api.get<WorkoutServer[]>('/workouts', { params: { startDate, endDate } });
+  const { data } = await api.get<WorkoutServer[]>('/api/workouts', { params: { startDate, endDate } });
   return data.map(toClient);
 }
 
@@ -85,7 +85,7 @@ export async function createWorkout(input: {
     distance: input.distance,
     notes: input.notes,
   };
-  const { data } = await api.post<WorkoutServer>('/workouts', body);
+  const { data } = await api.post<WorkoutServer>('/api/workouts', body);
   return toClient(data);
 }
 
@@ -96,7 +96,7 @@ export async function removeWorkout(id: number): Promise<void> {
     mockWorkouts = mockWorkouts.filter((w) => w.id !== id);
     return;
   }
-  await api.delete(`/workouts/${id}`);
+  await api.delete(`/api/workouts/${id}`);
 }
 
 

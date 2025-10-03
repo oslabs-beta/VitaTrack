@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import AppShell from './AppShell';
+import Protected from './Protected';  // Import it
 import Food from '@/pages/Food';
 import Workout from '@/pages/Workout';
 import Goals from '@/pages/Goals';
@@ -12,12 +13,17 @@ export const router = createBrowserRouter([
   { path: '/register', element: <Register /> },
   {
     path: '/',
-    element: <AppShell />,
+    element: <Protected />,  // Add Protected wrapper
     children: [
-      { index: true, element: <Food /> },
-      { path: 'food', element: <Food /> },
-      { path: 'workout', element: <Workout /> },
-      { path: 'goals', element: <Goals /> },
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <Food /> },
+          { path: 'food', element: <Food /> },
+          { path: 'workout', element: <Workout /> },
+          { path: 'goals', element: <Goals /> },
+        ],
+      },
     ],
   },
   { path: '*', element: <NotFound /> },
