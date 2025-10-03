@@ -22,7 +22,9 @@ interface CreateFoodLogInput {
   fat: number
   fiber?: number
   sugar?: number
-  servingSize?: string
+  servingSize: number
+  servingUnit: string
+  aiSummary?: string
 }
 
 interface UpdateFoodLogInput {

@@ -53,6 +53,7 @@ model FoodLog {
   
   // AI integration fields (for future)
   foodApiId   String?  @map("food_api_id") // External nutrition DB ID
+  aiSummary   String?  @map("ai_summary")
   
   // Timestamps
   createdAt   DateTime @default(now()) @map("created_at")
