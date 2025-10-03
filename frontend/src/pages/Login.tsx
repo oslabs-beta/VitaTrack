@@ -1,50 +1,34 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '@/stores/useAuth';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
+import { useAuth } from '@/stores/useAuth';
+import { login } from '@/api/auth';
+
 type FormData = { email: string; password: string };
 
 export default function Login() {
-  const nav = useNavigate();
-  const { setAuth, setLoading } = useAuth();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>();
+  const setAuth = useAuth((s) => s.setAuth);
+  const nav = useNavigate();
 
   const onSubmit = async (data: FormData) => {
     try {
-      setLoading(true);
-      
-      const response = await fetch('http://localhost:5001/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setAuth(result.data.token, result.data.user);
-        toast.success('Login successful!');
-        nav('/');
-      } else {
-        toast.error(result.message || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+      const res = await login(data);
+      setAuth(res.token ?? null, res.user);
+      toast.success('Welcome!');
+      nav('/');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Login failed');
     }
   };
 
@@ -64,13 +48,7 @@ export default function Login() {
                 type="email"
                 placeholder="you@example.com"
                 aria-invalid={!!errors.email}
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address'
-                  }
-                })}
+                {...register('email', { required: 'Email is required' })}
               />
               {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
             </div>
