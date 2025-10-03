@@ -19,6 +19,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "openai": "^6.1.0",
     "pg": "^8.11.5",
     "sequelize": "^6.37.3"
   },

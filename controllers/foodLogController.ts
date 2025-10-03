@@ -41,7 +41,8 @@ export async function createFoodLogEntry(req: AuthRequest, res: Response) {
       fiber,
       sugar,
       servingSize,
-      servingUnit
+      servingUnit,
+      aiSummary
     } = req.body;
 
     // Validation
@@ -63,7 +64,8 @@ export async function createFoodLogEntry(req: AuthRequest, res: Response) {
       fiber,
       sugar,
       servingSize,
-      servingUnit
+      servingUnit,
+      aiSummary
     });
 
     res.status(201).json(newLog);
@@ -73,11 +75,23 @@ export async function createFoodLogEntry(req: AuthRequest, res: Response) {
   }
 }
 
-// PUT /api/food-logs/:id
+// PATCH /api/food-logs/:id
 export async function updateFoodLogEntry(req: AuthRequest, res: Response) {
   try {
     const id = parseInt(req.params.id);
-    const updateData = req.body;
+    const { regenerateAI, ...updateData } = req.body;
+
+    // If user wants to regenerate AI summary
+    if (regenerateAI && updateData.foodName) {
+      // Call OpenAI here
+      const aiResponse = await fetch('http://localhost:5001/api/ai/nutrition/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: updateData.foodName })
+      });
+      const { summary } = await aiResponse.json();
+      updateData.aiSummary = summary;
+    }
 
     const updatedLog = await updateFoodLog(id, updateData);
     res.json(updatedLog);

@@ -28,12 +28,14 @@ import authRoutes from "./routes/authRoutes.js";
 import foodLogRoutes from "./routes/foodLogRoutes.js";
 import workoutRoutes from "./routes/workoutRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js";
+import nutritionRoutes from "./routes/nutritionRoutes.js";
 
 // Mount API routes FIRST (before static files and catch-all)
 app.use("/auth", authRoutes);
 app.use("/api/food-logs", foodLogRoutes);
 app.use("/api/workouts", workoutRoutes);
 app.use("/api/goals", goalRoutes);
+app.use("/api/ai", nutritionRoutes);
 
 // Serve tableviewer static files at root
 app.use(express.static(path.join(__dirname, 'tableviewer')));

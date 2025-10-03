@@ -11,17 +11,16 @@ All API routes (except `/auth/*`) require a JWT token in the Authorization heade
 Authorization: Bearer <your_jwt_token>
 ```
 
-## John's Test Token
-```json
-{
-  "user": {
-    "id": 1,
-    "email": "john@example.com",
-    "firstName": "John",
-    "lastName": "Doe"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiam9obkBleGFtcGxlLmNvbSIsImZpcnN0TmFtZSI6IkpvaG4iLCJsYXN0TmFtZSI6IkRvZSIsImlhdCI6MTc1OTM2NTQ1NiwiZXhwIjoxNzU5NDUxODU2fQ.fvcII3x0lJ6h1TlgPN7GE9iVq2_1tJImJrfn2B6LJbg"
-}
+## Getting John's Authorization Token
+```
+npm run build (if you haven't already done so)
+npm start
+curl -X POST http://localhost:5001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "password": "password123"}'
+
+This will generate a long token that you can then paste into your POST headers for testing:
+Authorization: Bearer [insert token here, without the brackets]
 ```
 
 ---
