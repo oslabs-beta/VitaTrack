@@ -1,63 +1,47 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '@/stores/useAuth';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
-type FormData = { 
-  email: string; 
-  password: string; 
+import { useAuth } from '@/stores/useAuth';
+import { register as registerApi } from '@/api/auth';
+
+type FormData = {
+  email: string;
+  password: string;
   confirm: string;
-  firstName?: string;
-  lastName?: string;
+  firstName?: string;   // optional if backend later accepts it
+  lastName?: string;    // optional if backend later accepts it
 };
 
 export default function Register() {
-  const nav = useNavigate();
-  const { setAuth, setLoading } = useAuth();
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>();
+  const setAuth = useAuth((s) => s.setAuth);
+  const nav = useNavigate();
+
+  const pw = watch('password');
 
   const onSubmit = async (data: FormData) => {
     try {
-      setLoading(true);
-      
-      const { confirm, ...registerData } = data;
-      
-      const response = await fetch('http://localhost:5001/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registerData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setAuth(result.data.token, result.data.user);
-        toast.success('Registration successful!');
-        nav('/');
-      } else {
-        toast.error(result.message || 'Registration failed');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast.error('Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+      // Currently only sending what our client expects. If backend needs names,
+      // extend registerApi and pass firstName/lastName too.
+      const res = await registerApi({ email: data.email, password: data.password });
+      setAuth(res.token ?? null, res.user);
+      toast.success('Account created!');
+      nav('/');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Registration failed');
     }
   };
-
-  const pw = watch('password');
 
   return (
     <div className="mx-auto max-w-sm">
@@ -68,6 +52,18 @@ export default function Register() {
         </CardHeader>
         <CardContent className="space-y-4">
           <form id="register-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Optional names */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First name</Label>
+                <Input id="firstName" placeholder="Jane" {...register('firstName')} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input id="lastName" placeholder="Doe" {...register('lastName')} />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -75,36 +71,9 @@ export default function Register() {
                 type="email"
                 placeholder="you@example.com"
                 aria-invalid={!!errors.email}
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address'
-                  }
-                })}
+                {...register('email', { required: 'Email is required' })}
               />
               {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="John"
-                  {...register('firstName')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="Doe"
-                  {...register('lastName')}
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -150,3 +119,5 @@ export default function Register() {
     </div>
   );
 }
+
+

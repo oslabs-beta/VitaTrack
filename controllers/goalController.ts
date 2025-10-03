@@ -3,7 +3,8 @@ import { AuthRequest } from '../middleware/auth.js';
 import {
   getActiveGoals,
   createGoal,
-  updateGoalProgress
+  updateGoalProgress,
+  deleteGoal
 } from '../prisma/queries.js';
 import {
   getGoalProgress,
@@ -115,5 +116,18 @@ export async function updateGoalProgressValue(req: AuthRequest, res: Response) {
   } catch (error) {
     console.error('Error updating goal progress:', error);
     res.status(500).json({ error: 'Failed to update goal progress' });
+  }
+}
+
+// DELETE /api/goals/:id
+export async function deleteGoalEntry(req: AuthRequest, res: Response) {
+  try {
+    const id = parseInt(req.params.id);
+
+    await deleteGoal(id);
+    res.json({ message: 'Goal deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting goal:', error);
+    res.status(500).json({ error: 'Failed to delete goal' });
   }
 }

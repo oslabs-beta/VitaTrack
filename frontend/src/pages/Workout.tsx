@@ -3,14 +3,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { createWorkout, listRecent, removeWorkout, suggestions, type Workout } from '@/api/workouts';
+import { createWorkout, listRecent, removeWorkout, type Workout } from '@/api/workouts';
 
 export default function Workout() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState({ type: 'Run', duration: '' as number | '', distance: '' as number | '' });
-  const [ideas, setIdeas] = useState<string[]>([]);
-
+  
   const refresh = async () => {
     setLoading(true);
     try { setWorkouts(await listRecent()); } finally { setLoading(false); }
@@ -18,7 +17,6 @@ export default function Workout() {
 
   useEffect(() => {
     refresh();
-    suggestions().then(setIdeas).catch(() => setIdeas([]));
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -92,23 +90,8 @@ export default function Workout() {
               ))}
             </ul>
           )}
-
-          <div className="pt-2">
-            <div className="text-sm font-medium mb-1">Suggestions</div>
-            {ideas.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No suggestions available.</div>
-            ) : (
-              <ul className="list-disc pl-5 text-sm">
-                {ideas.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            )}
-          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-// export default function Workout() {
-//   return <h2 className="text-2xl font-semibold">Workout</h2>;
-// }

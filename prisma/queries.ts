@@ -207,6 +207,12 @@ async function getBestStreak(goalId: number): Promise<number> {
   return goal?.bestStreak || 0
 }
 
+async function deleteGoal(id: number): Promise<Goal> {
+  return await prisma.goal.delete({
+    where: { id }
+  })
+}
+
 // ==================== EXPORTS ====================
 
 export {
@@ -238,6 +244,7 @@ export {
   getActiveGoals,
   createGoal,
   updateGoalProgress,
+  deleteGoal,
 
   // Direct prisma access for complex queries
   prisma
