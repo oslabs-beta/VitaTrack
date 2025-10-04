@@ -84,6 +84,7 @@ model Workout {
   // Additional details
   notes         String?  // User notes about the workout
   caloriesBurned Float?  @map("calories_burned") // estimated or calculated
+  aiSummary     String?  @map("ai_summary")
   
   // Workout context
   workoutDate   DateTime @map("workout_date") @db.Date

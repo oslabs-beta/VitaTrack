@@ -48,6 +48,7 @@ interface CreateWorkoutInput {
   distance?: number
   caloriesBurned?: number
   notes?: string
+  aiSummary?: string
 }
 
 interface UpdateWorkoutInput {

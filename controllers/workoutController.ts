@@ -47,7 +47,8 @@ export async function createWorkoutEntry(req: AuthRequest, res: Response) {
       duration,
       distance,
       caloriesBurned,
-      notes
+      notes,
+      aiSummary
     } = req.body;
 
     // Validation
@@ -65,7 +66,8 @@ export async function createWorkoutEntry(req: AuthRequest, res: Response) {
       duration,
       distance,
       caloriesBurned,
-      notes
+      notes,
+      aiSummary
     });
 
     res.status(201).json(newWorkout);

@@ -3,12 +3,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { createWorkout, listRecent, removeWorkout, type Workout } from '@/api/workouts';
+import { createWorkout, listRecent, removeWorkout, workoutAiLookup, type Workout } from '@/api/workouts';
 
 export default function Workout() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
-  const [draft, setDraft] = useState({ type: 'Run', duration: '' as number | '', distance: '' as number | '' });
+  const [draft, setDraft] = useState({ type: 'Run', duration: '' as number | '', distance: '' as number | '', notes: '' });
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lastAiSummary, setLastAiSummary] = useState<string>('');
   
   const refresh = async () => {
     setLoading(true);
@@ -19,6 +21,24 @@ export default function Workout() {
     refresh();
   }, []);
 
+  // AI lookup function
+  const runLookup = async () => {
+    if (!draft.type || !draft.duration) {
+      return toast.error('Enter workout type and duration first');
+    }
+    try {
+      setLookupLoading(true);
+      const description = `${draft.duration} minute ${draft.type.toLowerCase()}${draft.distance ? ` covering ${draft.distance} km` : ''}`;
+      const result = await workoutAiLookup(description);
+      setLastAiSummary(result.summary);
+      toast.success('AI estimate received');
+    } catch (e: any) {
+      toast.error(e?.message || 'AI lookup failed');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.type || !draft.duration) return toast.error('Type and duration are required');
@@ -27,9 +47,12 @@ export default function Workout() {
         type: draft.type,
         duration: Number(draft.duration) || 0,
         distance: draft.distance === '' ? undefined : Number(draft.distance) || 0,
+        notes: draft.notes || undefined,
+        aiSummary: lastAiSummary || undefined,
       });
       toast.success('Workout added');
-      setDraft({ type: 'Run', duration: '', distance: '' });
+      setDraft({ type: 'Run', duration: '', distance: '', notes: '' });
+      setLastAiSummary('');
       await refresh();
     } catch {
       toast.error('Failed to add workout');
@@ -61,6 +84,17 @@ export default function Workout() {
               <Input type="number" placeholder="Distance (optional)" value={draft.distance}
                      onChange={(e)=>setDraft(p=>({ ...p, distance: e.target.valueAsNumber || '' }))}/>
             </div>
+
+            <Button type="button" variant="outline" onClick={runLookup} disabled={lookupLoading} className="w-full">
+              {lookupLoading ? 'AI...' : 'AI Calorie Estimate'}
+            </Button>
+
+            {lastAiSummary && (
+              <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                <strong>AI Estimate:</strong> {lastAiSummary}
+              </div>
+            )}
+
             <Button type="submit">Add</Button>
           </form>
         </CardContent>
@@ -76,16 +110,31 @@ export default function Workout() {
           ) : (
             <ul className="space-y-2">
               {workouts.map((w) => (
-                <li key={w.id} className="flex items-center justify-between rounded border px-3 py-2">
-                  <div>
-                    <div className="font-medium">{w.type}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {w.duration} min{w.distance ? ` • ${w.distance}` : ''}
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => removeWorkout(w.id).then(refresh)}>
+                <li key={w.id} className="rounded border px-3 py-3 relative">
+                  {/* Delete button in top-right corner */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => removeWorkout(w.id).then(refresh)}
+                    className="absolute top-2 right-2"
+                  >
                     Delete
                   </Button>
+                  
+                  {/* Workout info - now has full width */}
+                  <div className="pr-20 mb-2">
+                    <div className="font-medium">{w.type}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {w.duration} min{w.distance ? ` • ${w.distance} km` : ''}
+                    </div>
+                  </div>
+                  
+                  {/* AI summary below */}
+                  {w.aiSummary && (
+                    <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                      <strong>AI:</strong> {w.aiSummary}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

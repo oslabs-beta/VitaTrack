@@ -1,12 +1,17 @@
 import api from './axios';
 import { USE_MOCKS } from '@/config';
 
+export type WorkoutAISummary = {
+  summary: string;
+};
+
 export type Workout = {
   id: number;
-  type: string;        // display name
+  type: string;
   duration: number;
   distance?: number;
   createdAt: string;
+  aiSummary?: string;
 };
 
 type WorkoutServer = {
@@ -26,6 +31,7 @@ type WorkoutServer = {
   isGenerated: boolean;
   createdAt: string;
   updatedAt: string;
+  aiSummary?: string;
 };
 
 const toClient = (w: WorkoutServer): Workout => ({
@@ -34,6 +40,7 @@ const toClient = (w: WorkoutServer): Workout => ({
   duration: w.duration,
   distance: w.distance ?? undefined,
   createdAt: w.createdAt,
+  aiSummary: w.aiSummary,
 });
 
 const todayYMD = () => new Date().toISOString().slice(0, 10);
@@ -61,6 +68,7 @@ export async function createWorkout(input: {
   duration: number;
   distance?: number;
   notes?: string;
+  aiSummary?: string;
 }): Promise<Workout> {
   if (USE_MOCKS) {
     await sleep();
@@ -70,6 +78,7 @@ export async function createWorkout(input: {
       duration: input.duration,
       distance: input.distance,
       createdAt: new Date().toISOString(),
+      aiSummary: input.aiSummary, 
     };
     mockWorkouts = [w, ...mockWorkouts];
     return w;
@@ -84,6 +93,7 @@ export async function createWorkout(input: {
     duration: input.duration,
     distance: input.distance,
     notes: input.notes,
+    aiSummary: input.aiSummary,
   };
   const { data } = await api.post<WorkoutServer>('/api/workouts', body);
   return toClient(data);
@@ -99,6 +109,20 @@ export async function removeWorkout(id: number): Promise<void> {
   await api.delete(`/api/workouts/${id}`);
 }
 
+// AI lookup function
+export async function workoutAiLookup(query: string): Promise<WorkoutAISummary> {
+  if (!query.trim()) throw new Error('empty query');
+
+  if (USE_MOCKS) {
+    await sleep(400);
+    return { 
+      summary: `Your ${query} burns approximately 300 kcal. (Assumes 70kg body weight and moderate intensity.)` 
+    };
+  }
+
+  const { data } = await api.post<WorkoutAISummary>('/api/ai/workout/summary', { text: query });
+  return data;
+}
 
 // import api from './axios';
 // import { USE_MOCKS } from '@/config';
